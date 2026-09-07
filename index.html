@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Practical Journal Generator - College Computer Science Lab Journals</title>
+  <meta name="description" content="100% database-free, browser-based SPA for creating, editing, previewing, printing, and exporting college practical journals.">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon.svg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e3a8a">
+
+  <!-- Bootstrap 5 CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- Custom Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/print.css" media="print">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top no-print py-2" style="background: linear-gradient(90deg, #0f172a 0%, #1e3a8a 100%) !important;">
+    <div class="container-fluid px-3">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="#" data-view-target="dashboard">
+        <img src="assets/icons/icon.svg" alt="App Logo" class="brand-icon">
+        <span class="navbar-brand-title">Practical Journal Generator</span>
+      </a>
+
+      <!-- Current Journal Badge & Auto-Save Pill -->
+      <div class="d-none d-md-flex align-items-center gap-2 ms-2 me-auto">
+        <span class="badge bg-light text-dark text-truncate" style="max-width: 260px;" id="navActiveJournalName" title="Current Active Journal">
+          Prompt Engineering Practical
+        </span>
+        <div id="autoSaveStatusPill" class="save-status-pill saved">
+          <i class="bi bi-check2"></i> Saved
+        </div>
+      </div>
+
+      <!-- Offcanvas Trigger for Mobile -->
+      <button class="navbar-toggler border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <!-- Desktop Nav Links -->
+      <div class="collapse navbar-collapse justify-content-end" id="mainNavbarNav">
+        <ul class="navbar-nav align-items-center gap-1">
+          <li class="nav-item">
+            <a class="nav-link active" href="#" data-view-target="dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-view-target="setup"><i class="bi bi-sliders"></i> Journal Setup</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-view-target="experiments"><i class="bi bi-journal-code"></i> Experiments</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-view-target="contents"><i class="bi bi-list-ol"></i> Contents</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-view-target="preview"><i class="bi bi-eye"></i> Preview</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-view-target="importExport"><i class="bi bi-arrow-left-right"></i> Export / Import</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-view-target="settings"><i class="bi bi-gear"></i> Settings</a>
+          </li>
+          <li class="nav-item ms-2">
+            <button class="btn btn-sm btn-primary d-flex align-items-center gap-1 shadow-sm" onclick="App.switchView('preview'); setTimeout(() => PreviewService.print(), 300);">
+              <i class="bi bi-printer"></i> Print
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile Offcanvas Menu -->
+  <div class="offcanvas offcanvas-start bg-dark text-white no-print" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
+    <div class="offcanvas-header border-bottom border-secondary">
+      <h5 class="offcanvas-title d-flex align-items-center gap-2" id="sidebarOffcanvasLabel">
+        <img src="assets/icons/icon.svg" alt="App Logo" width="28"> Practical Journal
+      </h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <ul class="nav nav-pills flex-column gap-2">
+        <li class="nav-item"><a class="nav-link active" href="#" data-view-target="dashboard"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="#" data-view-target="setup"><i class="bi bi-sliders me-2"></i> Journal Setup</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="#" data-view-target="experiments"><i class="bi bi-journal-code me-2"></i> Experiments</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="#" data-view-target="contents"><i class="bi bi-list-ol me-2"></i> Contents</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="#" data-view-target="preview"><i class="bi bi-eye me-2"></i> Preview</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="#" data-view-target="importExport"><i class="bi bi-arrow-left-right me-2"></i> Export / Import</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="#" data-view-target="settings"><i class="bi bi-gear me-2"></i> Settings</a></li>
+      </ul>
+      <hr class="border-secondary my-4">
+      <button class="btn btn-primary w-100" onclick="App.switchView('preview'); setTimeout(() => PreviewService.print(), 300);">
+        <i class="bi bi-printer me-2"></i> Print Journal
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content Wrapper -->
+  <main class="main-wrapper py-4">
+    <div class="container-fluid px-3 px-lg-4">
+
+      <!-- ============================================================== -->
+      <!-- VIEW 1: DASHBOARD VIEW                                         -->
+      <!-- ============================================================== -->
+      <section id="dashboardView" class="app-view active">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+          <div>
+            <h2 class="fw-bold mb-1">Journal Dashboard</h2>
+            <p class="text-muted mb-0">Overview of practical journals, experiment progress, and quick operations.</p>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-warning text-dark fw-semibold shadow-sm" id="btnLoadDemoPracticals" onclick="App.loadAllDemoPracticals()">
+              <i class="bi bi-stars me-1"></i> Load All 20 Demo Practicals
+            </button>
+            <button class="btn btn-success shadow-sm" id="btnCreateNewJournalModal">
+              <i class="bi bi-plus-circle me-1"></i> New Journal
+            </button>
+            <button class="btn btn-primary shadow-sm" onclick="App.switchView('experiments')">
+              <i class="bi bi-pencil-square me-1"></i> Open Editor
+            </button>
+          </div>
+        </div>
+
+        <!-- Progress Overview Bar -->
+        <div class="card mb-4 border-0 shadow-sm">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="fw-bold">Overall Practical Completion</span>
+              <span class="badge bg-primary fs-6" id="statProgressPercent">0%</span>
+            </div>
+            <div class="progress" style="height: 14px;">
+              <div id="statProgressBar" class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric Counter Cards -->
+        <div class="row g-3 mb-4">
+          <div class="col-6 col-md-4 col-xl-2">
+            <div class="card stat-card p-3">
+              <div class="d-flex align-items-center justify-content-between">
+                <div>
+                  <div class="text-muted small fw-semibold">Journals</div>
+                  <h3 class="fw-bold mb-0 text-dark" id="statTotalJournals">1</h3>
+                </div>
+                <div class="stat-icon-wrapper bg-primary bg-opacity-10 text-primary">
+                  <i class="bi bi-collection"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-4 col-xl-2">
+            <div class="card stat-card p-3">
+              <div class="d-flex align-items-center justify-content-between">
+                <div>
+                  <div class="text-muted small fw-semibold">Experiments</div>
+                  <h3 class="fw-bold mb-0 text-dark" id="statTotalExp">20</h3>
+                </div>
+                <div class="stat-icon-wrapper bg-info bg-opacity-10 text-info">
+                  <i class="bi bi-list-check"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-4 col-xl-2">
+            <div class="card stat-card p-3">
+              <div class="d-flex align-items-center justify-content-between">
+                <div>
+                  <div class="text-muted small fw-semibold">Completed</div>
+                  <h3 class="fw-bold mb-0 text-success" id="statCompletedExp">1</h3>
+                </div>
+                <div class="stat-icon-wrapper bg-success bg-opacity-10 text-success">
+                  <i class="bi bi-check-circle"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-4 col-xl-2">
+            <div class="card stat-card p-3">
+              <div class="d-flex align-items-center justify-content-between">
+                <div>
+                  <div class="text-muted small fw-semibold">In Progress</div>
+                  <h3 class="fw-bold mb-0 text-warning" id="statInProgressExp">0</h3>
+                </div>
+                <div class="stat-icon-wrapper bg-warning bg-opacity-10 text-warning">
+                  <i class="bi bi-clock-history"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-4 col-xl-2">
+            <div class="card stat-card p-3">
+              <div class="d-flex align-items-center justify-content-between">
+                <div>
+                  <div class="text-muted small fw-semibold">Not Started</div>
+                  <h3 class="fw-bold mb-0 text-secondary" id="statNotStartedExp">19</h3>
+                </div>
+                <div class="stat-icon-wrapper bg-secondary bg-opacity-10 text-secondary">
+                  <i class="bi bi-circle"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-4 col-xl-2">
+            <div class="card stat-card p-3">
+              <div class="d-flex align-items-center justify-content-between">
+                <div>
+                  <div class="text-muted small fw-semibold">Format</div>
+                  <h5 class="fw-bold mb-0 text-primary">A4 Print</h5>
+                </div>
+                <div class="stat-icon-wrapper bg-dark bg-opacity-10 text-dark">
+                  <i class="bi bi-file-earmark-pdf"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Journal Quick Summary Card -->
+        <div class="row g-4 mb-4">
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-journal-bookmark me-2"></i>Active Practical Journal</h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="App.switchView('setup')"><i class="bi bi-gear me-1"></i> Edit Setup</button>
+              </div>
+              <div class="card-body p-4">
+                <h4 class="fw-bold text-dark mb-2" id="dashSubjectName">Prompt Engineering Practical</h4>
+                <div class="text-muted mb-3" id="dashCollegeName">Yashwantrao Chavan Mahavidyalaya, Islampur</div>
+                <div class="row g-2 small">
+                  <div class="col-6"><strong>Department:</strong> <span id="dashDeptName">Department of Computer Science</span></div>
+                  <div class="col-6"><strong>Course / Class:</strong> <span id="dashCourseName">B.Sc. Part III Computer Science</span></div>
+                  <div class="col-6"><strong>Academic Year:</strong> <span id="dashAcademicYear">2026-27</span></div>
+                  <div class="col-6"><strong>Teacher:</strong> <span id="dashTeacherName">Prof. Dr. A. K. Patil</span></div>
+                  <div class="col-12 mt-2"><strong>Student:</strong> <span id="dashStudentName">G. M. Deshmukh</span></div>
+                </div>
+                <hr>
+                <div class="d-flex flex-wrap gap-2">
+                  <button class="btn btn-primary btn-sm" onclick="App.switchView('experiments')"><i class="bi bi-pencil-square me-1"></i> Edit Experiments</button>
+                  <button class="btn btn-outline-secondary btn-sm" onclick="App.switchView('contents')"><i class="bi bi-list-ol me-1"></i> Index Page</button>
+                  <button class="btn btn-outline-success btn-sm" onclick="App.switchView('preview')"><i class="bi bi-eye me-1"></i> Preview Full Journal</button>
+                  <button class="btn btn-outline-dark btn-sm" onclick="App.switchView('preview'); setTimeout(() => PreviewService.print(), 300);"><i class="bi bi-printer me-1"></i> Print / PDF</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- All Stored Journals in LocalStorage -->
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-folder2-open me-2"></i>My Saved Journals</h5>
+                <button class="btn btn-sm btn-outline-success" onclick="App.openNewJournalModal()"><i class="bi bi-plus"></i> New</button>
+              </div>
+              <div class="card-body p-0 table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light small">
+                    <tr>
+                      <th>Subject</th>
+                      <th>Class</th>
+                      <th>Exp</th>
+                      <th>Progress</th>
+                      <th>Updated</th>
+                      <th class="text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashJournalsListTbody">
+                    <!-- Dynamic journal rows -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW 2: JOURNAL SETUP VIEW                                     -->
+      <!-- ============================================================== -->
+      <section id="setupView" class="app-view">
+        <div class="card border-0 shadow-sm mx-auto" style="max-width: 960px;">
+          <div class="card-header bg-white border-bottom py-3">
+            <h4 class="fw-bold mb-1 text-primary"><i class="bi bi-sliders me-2"></i>Journal Setup & Metadata</h4>
+            <p class="text-muted small mb-0">Configure college, student, teacher, and experiment numbering for this practical journal.</p>
+          </div>
+          <div class="card-body p-4">
+            <form id="journalSetupForm">
+              <!-- College & Course Section -->
+              <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">1. Institution & Course Details</h5>
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">College / Institute Name <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="setupCollegeName" required placeholder="e.g. Yashwantrao Chavan Mahavidyalaya, Islampur">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Department Name</label>
+                  <input type="text" class="form-control" id="setupDeptName" placeholder="e.g. Department of Computer Science">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Course / Class Name</label>
+                  <input type="text" class="form-control" id="setupCourseName" placeholder="e.g. B.Sc. Part III Computer Science">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">Semester</label>
+                  <input type="text" class="form-control" id="setupSemester" placeholder="e.g. VI">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">Academic Year</label>
+                  <input type="text" class="form-control" id="setupAcademicYear" placeholder="e.g. 2026-27">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Subject / Practical Name <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="setupSubjectName" required placeholder="e.g. Prompt Engineering Practical">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Subject Code</label>
+                  <input type="text" class="form-control" id="setupSubjectCode" placeholder="e.g. CS-PRACT-302">
+                </div>
+              </div>
+
+              <!-- College Logo Upload -->
+              <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">2. College Emblem / Logo</h5>
+              <div class="row align-items-center mb-4 g-3">
+                <div class="col-auto">
+                  <img id="setupLogoPreview" src="" alt="College Logo" class="img-thumbnail d-none" style="max-height: 80px; max-width: 120px; object-fit: contain;">
+                </div>
+                <div class="col">
+                  <label class="form-label fw-semibold">Upload College Logo (PNG / JPG / SVG)</label>
+                  <div class="d-flex gap-2">
+                    <input type="file" class="form-control" id="setupLogoInput" accept="image/*">
+                    <button type="button" class="btn btn-outline-danger" id="btnRemoveLogo">Remove</button>
+                  </div>
+                  <div class="form-text">Stored locally in your browser LocalStorage (no server upload required).</div>
+                </div>
+              </div>
+
+              <!-- Student & Teacher Details -->
+              <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">3. Student & Teacher Credentials</h5>
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Student Name</label>
+                  <input type="text" class="form-control" id="setupStudentName" placeholder="e.g. G. M. Deshmukh">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">Roll Number</label>
+                  <input type="text" class="form-control" id="setupRollNumber" placeholder="e.g. 34">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">PRN / Seat Number</label>
+                  <input type="text" class="form-control" id="setupPRNNumber" placeholder="e.g. PRN2024098231">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Teacher-in-Charge Name</label>
+                  <input type="text" class="form-control" id="setupTeacherName" placeholder="e.g. Prof. Dr. A. K. Patil">
+                </div>
+              </div>
+
+              <!-- Experiment Generation Settings -->
+              <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">4. Experiment Range & Generation</h5>
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Starting Experiment Number</label>
+                  <input type="number" class="form-control" id="setupStartExpNum" min="1" value="21">
+                  <div class="form-text">e.g. 21 for Practicals 21 to 40, or 1 for standard 1 to 20.</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Total Number of Experiments</label>
+                  <input type="number" class="form-control" id="setupNumOfExp" min="1" value="20">
+                  <div class="form-text">Supports any count: 5, 10, 15, 20, 30, 40, 50, etc.</div>
+                </div>
+                <div class="col-12">
+                  <button type="button" class="btn btn-outline-secondary" id="btnSetupGenerateExperiments">
+                    <i class="bi bi-magic me-1"></i> Add / Generate Experiments for this Range
+                  </button>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="d-flex justify-content-between pt-3 border-top">
+                <button type="button" class="btn btn-outline-secondary" id="btnSetupReset">
+                  <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Defaults
+                </button>
+                <div class="d-flex gap-2">
+                  <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-check2-circle me-1"></i> Save Changes
+                  </button>
+                  <button type="button" class="btn btn-success px-4" onclick="App.saveSetupForm(); App.switchView('experiments');">
+                    Continue to Editor <i class="bi bi-arrow-right ms-1"></i>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW 3: EXPERIMENTS WORKSPACE & EDITOR                         -->
+      <!-- ============================================================== -->
+      <section id="experimentsView" class="app-view">
+        <div class="row g-3 experiments-workspace">
+          <!-- Left Sidebar: Experiment Navigation List -->
+          <div class="col-lg-4 col-xl-3">
+            <div class="card border-0 shadow-sm experiments-sidebar-card">
+              <div class="card-header bg-white border-bottom p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="fw-bold small text-uppercase text-secondary">EXPERIMENTS</span>
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-sm btn-primary" id="btnAddExperiment" title="Add Single Experiment">
+                      <i class="bi bi-plus-lg"></i> Add
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="App.switchView('importExport')" title="Import List or CSV">
+                      <i class="bi bi-upload"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Instant Search Input -->
+                <div class="input-group input-group-sm mb-2">
+                  <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                  <input type="text" class="form-control" id="expSearchInput" placeholder="Search experiments (Ctrl+F)...">
+                </div>
+
+                <!-- Mini Progress summary -->
+                <div>
+                  <div class="d-flex justify-content-between small text-muted mb-1">
+                    <span id="sidebarProgressText">0 / 20 Completed</span>
+                  </div>
+                  <div class="progress" style="height: 6px;">
+                    <div class="progress-bar bg-success" id="sidebarProgressBar" style="width: 0%;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Scrollable Experiments List -->
+              <div class="experiments-sidebar-list" id="expSidebarList">
+                <!-- Dynamically populated experiment items -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Experiment Main Editor -->
+          <div class="col-lg-8 col-xl-9">
+            <!-- Empty State when no experiment is selected -->
+            <div id="experimentEditorEmptyState" class="card border-0 shadow-sm p-5 text-center d-none">
+              <i class="bi bi-journal-x display-3 text-muted mb-3"></i>
+              <h4 class="fw-bold">No Experiment Selected</h4>
+              <p class="text-muted">Select an experiment from the sidebar or click "Add Experiment" to start editing.</p>
+              <div>
+                <button class="btn btn-primary" onclick="document.getElementById('btnAddExperiment').click();"><i class="bi bi-plus-lg me-1"></i> Add Experiment</button>
+              </div>
+            </div>
+
+            <!-- Main Editor Form Wrapper -->
+            <div id="experimentEditorWrapper" class="card border-0 shadow-sm">
+              <!-- Sticky Editor Header -->
+              <div class="card-header bg-white border-bottom p-3 p-md-4">
+                <div class="row g-3 align-items-center mb-2">
+                  <div class="col-auto">
+                    <div class="input-group">
+                      <span class="input-group-text fw-bold text-primary">Practical No.</span>
+                      <input type="number" class="form-control fw-bold text-primary" id="editorExpNumber" style="width: 85px;" value="21">
+                    </div>
+                  </div>
+                  <div class="col">
+                    <input type="text" class="form-control form-control-lg fw-bold" id="editorExpTitle" placeholder="Enter Experiment Title...">
+                  </div>
+                  <div class="col-auto">
+                    <input type="date" class="form-control form-control-sm" id="editorExpDate" title="Conducted Date">
+                  </div>
+                </div>
+
+                <!-- Editor Toolbar Buttons -->
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2 border-top">
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary" id="btnMoveExpUp" title="Move Up"><i class="bi bi-arrow-up"></i> Move Up</button>
+                    <button class="btn btn-outline-secondary" id="btnMoveExpDown" title="Move Down"><i class="bi bi-arrow-down"></i> Move Down</button>
+                    <button class="btn btn-outline-secondary" id="btnDuplicateExp" title="Duplicate Experiment"><i class="bi bi-copy"></i> Duplicate</button>
+                    <button class="btn btn-outline-danger" id="btnDeleteExp" title="Delete Experiment"><i class="bi bi-trash"></i> Delete</button>
+                  </div>
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-primary" onclick="App.currentPreviewMode = 'single'; App.switchView('preview');">
+                      <i class="bi bi-eye me-1"></i> Preview Practical
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="App.navigateToNextExperiment();">
+                      Next Practical <i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Main Editor Body with Dynamic Template Sections -->
+              <div class="card-body p-3 p-md-4">
+                <!-- Standard Template Sections (Aim, Problem Analysis, Concept, Steps, Prompt/Program, Input, Output, Observation, Conclusion) -->
+                <div id="editorSectionsContainer">
+                  <!-- Dynamically rendered textareas -->
+                </div>
+
+                <!-- Dynamic Viva Questions Accordion / Card -->
+                <div class="card border-0 bg-light p-3 mb-4 rounded-3">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-question-diamond me-2 text-primary"></i>Viva Questions & Answers</h5>
+                    <button type="button" class="btn btn-sm btn-primary" id="btnAddVivaQuestion">
+                      <i class="bi bi-plus-circle me-1"></i> Add Viva Question
+                    </button>
+                  </div>
+                  <div id="editorVivaQuestionsList">
+                    <!-- Dynamic Viva Q&A items -->
+                  </div>
+                </div>
+
+                <!-- Dynamic References Accordion / Card -->
+                <div class="card border-0 bg-light p-3 mb-4 rounded-3">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-bookmark-check me-2 text-secondary"></i>References & Citations</h5>
+                    <button type="button" class="btn btn-sm btn-secondary" id="btnAddReference">
+                      <i class="bi bi-plus-circle me-1"></i> Add Reference
+                    </button>
+                  </div>
+                  <div id="editorReferencesList">
+                    <!-- Dynamic Reference items -->
+                  </div>
+                </div>
+
+                <!-- Dynamic Custom Sections -->
+                <div class="card border-0 bg-light p-3 rounded-3">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                      <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-plus-square me-2 text-info"></i>Custom Lab Sections</h5>
+                      <span class="text-muted small">Add subject-specific sections like Hardware Requirements, Procedure, Dataset, or Result.</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-info text-dark" id="btnAddCustomSection">
+                      <i class="bi bi-plus-circle me-1"></i> Add Custom Section
+                    </button>
+                  </div>
+                  <div id="editorCustomSectionsList">
+                    <!-- Dynamic Custom Section items -->
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW 4: CONTENTS / INDEX VIEW                                  -->
+      <!-- ============================================================== -->
+      <section id="contentsView" class="app-view">
+        <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+          <div>
+            <h3 class="fw-bold mb-1">Practical Journal Contents / Index</h3>
+            <p class="text-muted mb-0">Automatically generated index table synchronized with your experiment list.</p>
+          </div>
+          <button class="btn btn-primary" onclick="App.switchView('preview'); setTimeout(() => PreviewService.print(), 300);">
+            <i class="bi bi-printer me-1"></i> Print Index
+          </button>
+        </div>
+
+        <div class="preview-page-container d-flex justify-content-center">
+          <div id="contentsViewContainer" class="w-100" style="max-width: 820px;">
+            <!-- Rendered Contents Page -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW 5: PREVIEW & PRINT VIEW                                   -->
+      <!-- ============================================================== -->
+      <section id="previewView" class="app-view">
+        <!-- Floating Preview Control Bar -->
+        <div class="card border-0 shadow-sm mb-4 preview-toolbar no-print">
+          <div class="card-body p-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <!-- Mode Switcher -->
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-outline-primary active" id="btnPreviewComplete">
+                <i class="bi bi-book me-1"></i> Complete Journal
+              </button>
+              <button class="btn btn-outline-primary" id="btnPreviewSingle">
+                <i class="bi bi-file-earmark-text me-1"></i> Current Experiment
+              </button>
+            </div>
+
+            <!-- Viva & Section Toggles -->
+            <div class="d-flex align-items-center gap-3 small">
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="chkPreviewVivaAnswers" checked>
+                <label class="form-check-label fw-semibold" for="chkPreviewVivaAnswers">Show Viva Answers</label>
+              </div>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="chkPreviewHideEmpty">
+                <label class="form-check-label fw-semibold" for="chkPreviewHideEmpty">Hide Empty Sections</label>
+              </div>
+            </div>
+
+            <!-- Font Size Options -->
+            <div class="btn-group btn-group-sm" role="group" aria-label="Font Size">
+              <span class="input-group-text bg-light text-muted border-end-0" style="font-size: 0.8rem;">Font:</span>
+              <button type="button" class="btn btn-outline-secondary" data-font-size="small">Small</button>
+              <button type="button" class="btn btn-outline-secondary active" data-font-size="medium">Medium</button>
+              <button type="button" class="btn btn-outline-secondary" data-font-size="large">Large</button>
+            </div>
+
+            <!-- Print and Download Actions -->
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-primary btn-sm" id="btnDownloadPDF">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
+              </button>
+              <button class="btn btn-primary btn-sm" id="btnPrintJournal">
+                <i class="bi bi-printer me-1"></i> Print (Ctrl + P)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paper Simulation Canvas -->
+        <div class="preview-page-container">
+          <div id="previewRenderContainer">
+            <!-- Complete Journal or Single Experiment HTML is rendered here -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW 6: IMPORT & EXPORT VIEW                                   -->
+      <!-- ============================================================== -->
+      <section id="importExportView" class="app-view">
+        <div class="mb-4">
+          <h3 class="fw-bold mb-1">Export, Import & Data Backup</h3>
+          <p class="text-muted mb-0">Export journals to JSON files, restore backups, or import experiment lists from text and CSV.</p>
+        </div>
+
+        <div class="row g-4">
+          <!-- Card 1: Single Journal Export & Import -->
+          <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom py-3">
+                <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-file-earmark-code me-2"></i>Active Journal JSON</h5>
+              </div>
+              <div class="card-body p-4 d-flex flex-column justify-content-between">
+                <div>
+                  <p class="text-muted">Export your active practical journal (all experiments, sections, viva questions, and references) as a downloadable <code>.json</code> file.</p>
+                  <button class="btn btn-primary mb-4 w-100" id="btnExportJournalJSON">
+                    <i class="bi bi-download me-2"></i> Export Current Journal
+                  </button>
+                  <hr>
+                  <h6 class="fw-bold text-dark mb-2">Import Journal from JSON</h6>
+                  <p class="text-muted small">Select a previously exported <code>.json</code> practical journal file to load it into the app.</p>
+                  <input type="file" class="form-control" id="fileImportJournalJSON" accept=".json">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Full Multi-Journal Database Backup & Restore -->
+          <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom py-3">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-database-check me-2"></i>Full Database Backup</h5>
+              </div>
+              <div class="card-body p-4 d-flex flex-column justify-content-between">
+                <div>
+                  <p class="text-muted">Create a complete backup of all your journals, settings, and templates into <code>practical-journal-backup.json</code>.</p>
+                  <button class="btn btn-dark mb-4 w-100" id="btnBackupAllJournals">
+                    <i class="bi bi-archive me-2"></i> Backup All Journals
+                  </button>
+                  <hr>
+                  <h6 class="fw-bold text-dark mb-2">Restore Backup</h6>
+                  <p class="text-muted small">Restore all journals and preferences from a backup file.</p>
+                  <input type="file" class="form-control" id="fileRestoreBackup" accept=".json">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Batch Experiment List Text Importer -->
+          <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom py-3">
+                <h5 class="fw-bold mb-0 text-success"><i class="bi bi-card-list me-2"></i>Batch Experiment List Import</h5>
+              </div>
+              <div class="card-body p-4">
+                <p class="text-muted">Paste an experiment syllabus or list (e.g. <code>21. Basic Prompts...</code>), and the app will automatically extract numbers and titles to create experiments.</p>
+                <button class="btn btn-outline-success w-100" id="btnOpenBatchListImport">
+                  <i class="bi bi-clipboard-plus me-2"></i> Paste & Parse Experiment List
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: CSV File Importer -->
+          <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom py-3">
+                <h5 class="fw-bold mb-0 text-info"><i class="bi bi-file-earmark-spreadsheet me-2"></i>CSV Import</h5>
+              </div>
+              <div class="card-body p-4">
+                <p class="text-muted">Upload a CSV file with format <code>experiment_number,title</code>.</p>
+                <input type="file" class="form-control" id="fileImportCSV" accept=".csv, .txt">
+                <div class="form-text mt-2">Example: <code>21,Basic Prompts\n22,Zero-shot vs Few-shot</code></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW 7: SETTINGS VIEW                                          -->
+      <!-- ============================================================== -->
+      <section id="settingsView" class="app-view">
+        <div class="card border-0 shadow-sm mx-auto" style="max-width: 860px;">
+          <div class="card-header bg-white border-bottom py-3">
+            <h4 class="fw-bold mb-1 text-primary"><i class="bi bi-gear me-2"></i>Application Settings</h4>
+            <p class="text-muted small mb-0">Set defaults for new journals and customize preview/print formatting.</p>
+          </div>
+          <div class="card-body p-4">
+            <form id="appSettingsForm">
+              <h5 class="fw-bold border-bottom pb-2 mb-3">Default Academic Credentials</h5>
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Default College Name</label>
+                  <input type="text" class="form-control" id="settingCollege">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Default Department Name</label>
+                  <input type="text" class="form-control" id="settingDept">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Default Course / Class</label>
+                  <input type="text" class="form-control" id="settingCourse">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Default Subject Name</label>
+                  <input type="text" class="form-control" id="settingSubject">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Default Academic Year</label>
+                  <input type="text" class="form-control" id="settingYear">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Default Teacher Name</label>
+                  <input type="text" class="form-control" id="settingTeacher">
+                </div>
+              </div>
+
+              <h5 class="fw-bold border-bottom pb-2 mb-3">Page & Print Formatting</h5>
+              <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Page Size</label>
+                  <select class="form-select" id="settingPageSize">
+                    <option value="A4" selected>A4 (210 × 297 mm)</option>
+                    <option value="Letter">US Letter</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Page Orientation</label>
+                  <select class="form-select" id="settingOrientation">
+                    <option value="portrait" selected>Portrait</option>
+                    <option value="landscape">Landscape</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Font Size</label>
+                  <select class="form-select" id="settingFontSize">
+                    <option value="small">Small</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="large">Large</option>
+                  </select>
+                </div>
+              </div>
+
+              <h5 class="fw-bold border-bottom pb-2 mb-3">Display & Behavior Options</h5>
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="settingShowLogo" checked>
+                    <label class="form-check-label fw-semibold" for="settingShowLogo">Show College Logo on Cover Page</label>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="settingShowViva" checked>
+                    <label class="form-check-label fw-semibold" for="settingShowViva">Show Viva Answers by default</label>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="settingHideEmpty">
+                    <label class="form-check-label fw-semibold" for="settingHideEmpty">Hide Empty Sections in Final Print</label>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="settingAutoSave" checked>
+                    <label class="form-check-label fw-semibold" for="settingAutoSave">Enable Auto-Save to LocalStorage</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pt-3 border-top text-end">
+                <button type="submit" class="btn btn-primary px-4">
+                  <i class="bi bi-check2-circle me-1"></i> Save Preferences
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ============================================================== -->
+  <!-- MODALS CONTAINER                                               -->
+  <!-- ============================================================== -->
+
+  <!-- Modal 1: Confirmation Modal (Delete journal, experiment, viva) -->
+  <div class="modal fade" id="confirmActionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title text-danger" id="confirmModalTitle"><i class="bi bi-exclamation-triangle me-2"></i>Confirm Action</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="confirmModalBody">
+          Are you sure you want to proceed?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="btnModalConfirmAction">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Create New Journal Modal -->
+  <div class="modal fade" id="newJournalModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <form id="newJournalForm">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold text-primary"><i class="bi bi-plus-circle me-2"></i>Create New Practical Journal</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Subject / Lab Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="newJournalSubject" required placeholder="e.g. Python Programming Lab, Prompt Engineering Practical, DBMS Lab">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Template Structure</label>
+                <select class="form-select" id="newJournalTemplate">
+                  <!-- Populated from TemplateService -->
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Starting Exp #</label>
+                <input type="number" class="form-control" id="newJournalStartNum" value="1" min="1">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Total Experiments</label>
+                <input type="number" class="form-control" id="newJournalCount" value="10" min="1">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">College Name</label>
+                <input type="text" class="form-control" id="newJournalCollege">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Department Name</label>
+                <input type="text" class="form-control" id="newJournalDept">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Course / Class</label>
+                <input type="text" class="form-control" id="newJournalCourse">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Academic Year</label>
+                <input type="text" class="form-control" id="newJournalYear" value="2026-27">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Teacher Name</label>
+                <input type="text" class="form-control" id="newJournalTeacher">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-success"><i class="bi bi-check2-circle me-1"></i> Create Journal</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Batch Experiment List Import Modal -->
+  <div class="modal fade" id="batchListImportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold text-success"><i class="bi bi-card-list me-2"></i>Paste Experiment List</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small">Paste your syllabus or practical title list below. Each line can start with a number (e.g. <code>21. Basic Prompts</code>) or just the title.</p>
+          <textarea class="form-control font-monospace" id="batchListTextarea" rows="8" placeholder="21. Basic Prompts: Summarization, Translation, Classification
+22. Zero-shot vs Few-shot Prompting
+23. Role-based Prompts
+24. Output Format Constraints
+25. Iterative Prompt Refinement"></textarea>
+          <div class="form-check mt-3">
+            <input class="form-check-input" type="checkbox" id="chkBatchListReplace">
+            <label class="form-check-label fw-semibold text-danger" for="chkBatchListReplace">
+              Replace all current experiments in this journal (instead of appending)
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-success" id="btnConfirmBatchListImport"><i class="bi bi-upload me-1"></i> Import Experiments</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3 no-print" style="z-index: 1090;">
+    <div id="appToast" class="toast align-items-center shadow" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header" id="appToastHeader">
+        <strong class="me-auto"><i class="bi bi-bell me-1"></i> Notification</strong>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body bg-white" id="appToastBody">
+        Action completed.
+      </div>
+    </div>
+  </div>
+
+  <!-- External JavaScript Libraries (Bootstrap Bundle & html2pdf) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- Application Logic Modules -->
+  <script src="js/storage.js"></script>
+  <script src="js/templates.js"></script>
+  <script src="js/demo-data.js"></script>
+  <script src="js/journal.js"></script>
+  <script src="js/experiments.js"></script>
+  <script src="js/preview.js"></script>
+  <script src="js/import-export.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

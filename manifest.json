@@ -1,0 +1,17 @@
+{
+  "name": "Practical Journal Generator",
+  "short_name": "JournalGen",
+  "description": "Professional Single Page Application for college teachers and students to create, edit, preview, print, and export practical journals.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e3a8a",
+  "icons": [
+    {
+      "src": "assets/icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
